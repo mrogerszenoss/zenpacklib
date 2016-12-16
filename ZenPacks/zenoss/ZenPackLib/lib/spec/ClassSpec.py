@@ -1355,4 +1355,3 @@ class ClassSpec(Spec):
         self.create_registered()
         self.register_dynamicview_adapters()
         self.register_impact_adapters()
-

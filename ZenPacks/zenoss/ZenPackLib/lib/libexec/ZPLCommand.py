@@ -71,6 +71,10 @@ class ZPLCommand(ZenScriptBase):
                          dest="dump_process_classes",
                          action="store_true",
                          help="export existing process classes to YAML")
+        group.add_option("-a", "--dump-all",
+                         dest="dump_all",
+                         action="store_true",
+                         help="export all ZenPack packables to YAML")
         self.parser.add_option_group(group)
 
         group = OptionGroup(self.parser, "ZenPack Development")
@@ -161,7 +165,9 @@ class ZPLCommand(ZenScriptBase):
                 self.parser.error(msg)
 
         if self.options.dump or self.options.create or\
-           self.options.dump_event_classes or self.options.dump_process_classes:
+           self.options.dump_event_classes or\
+           self.options.dump_process_classes or\
+           self.options.dump_all:
             self.parser.usage = "%prog [options] ZENPACKNAME"
             if len(self.args) != 1:
                 self.parser.error('No ZenPack given')
@@ -203,6 +209,9 @@ class ZPLCommand(ZenScriptBase):
 
         elif self.options.dump_process_classes:
             self.dump_process_classes(self.options.zenpack)
+
+        elif self.options.dump_all:
+            self.dump_all(self.options.zenpack)
 
     def optimize(self, filename):
         '''return formatted YAML with DEFAULTS optimized'''
@@ -310,6 +319,29 @@ class ZPLCommand(ZenScriptBase):
         print "  - creating file: {}".format(yaml_fname)
         with open(yaml_fname, 'w') as yaml_f:
             yaml_f.write("name: {}\n".format(zenpack_name))
+
+    def dump_all(self, zenpack_name):
+        self.connect()
+
+        templates = self.zenpack_templatespecs(zenpack_name)
+        eventclasses = self.zenpack_eventclassspecs(zenpack_name)
+        processclasses = self.zenpack_processclassspecs(zenpack_name)
+
+        if templates:
+            zpsp = ZenPackSpecParams(
+                zenpack_name,
+                device_classes={x: {} for x in templates},
+                event_classes={x: {} for x in eventclasses},
+                process_class_organizers={x: {} for x in processclasses}
+                )
+            for dc_name in templates:
+                zpsp.device_classes[dc_name].templates = templates[dc_name]
+            for ec_name in eventclasses:
+                zpsp.event_classes[ec_name] = eventclasses[ec_name]
+                zpsp.event_classes[ec_name].mappings = eventclasses[ec_name].mappings
+            for pc_name in processclasses:
+                zpsp.process_class_organizers[pc_name].process_classes = processclasses[pc_name].process_classes
+            print yaml.dump(zpsp, Dumper=Dumper)
 
     def dump_templates(self, zenpack_name):
         ''''''
@@ -441,7 +473,7 @@ class ZPLCommand(ZenScriptBase):
         zenpack = self.dmd.ZenPackManager.packs._getOb(zenpack_name, None)
         if zenpack is None:
             DEFAULTLOG.error("ZenPack '{}' not found.".format(zenpack_name))
-            return
+            return {}
 
         # Find explicitly associated templates, and templates implicitly
         # associated through an explicitly associated device class.
@@ -484,7 +516,7 @@ class ZPLCommand(ZenScriptBase):
         zenpack = self.dmd.ZenPackManager.packs._getOb(zenpack_name, None)
         if zenpack is None:
             self.LOG.error("ZenPack '%s' not found." % zenpack_name)
-            return
+            return {}
 
         eventclasses = collections.defaultdict(dict)
         for eventclass in [x for x in zenpack.packables() if x.meta_type == 'EventClass']:
@@ -526,7 +558,7 @@ class ZPLCommand(ZenScriptBase):
         zenpack = self.dmd.ZenPackManager.packs._getOb(zenpack_name, None)
         if zenpack is None:
             self.LOG.error("ZenPack '%s' not found.", zenpack_name)
-            return
+            return {}
 
         processclasses = collections.defaultdict(dict)
         for processclassorg in [x for x in zenpack.packables() if x.meta_type == 'OSProcessOrganizer']:

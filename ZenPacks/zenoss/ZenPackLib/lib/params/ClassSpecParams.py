@@ -6,6 +6,7 @@
 # License.zenoss under the directory where your Zenoss product is installed.
 #
 ##############################################################################
+from Acquisition import aq_base
 from .SpecParams import SpecParams
 from .ClassPropertySpecParams import ClassPropertySpecParams
 from .ClassRelationshipSpecParams import ClassRelationshipSpecParams
@@ -36,3 +37,22 @@ class ClassSpecParams(SpecParams, ClassSpec):
 
         self.impact_triggers = self.specs_from_param(
             ImpactTriggerSpecParams, 'impact_triggers', impact_triggers, leave_defaults=True, zplog=self.LOG)
+
+    @classmethod
+    def fromObject(cls, ob):
+        self = super(ClassSpecParams, cls).fromObject(ob)
+
+        ob = aq_base(ob)
+
+        self.properties = {x['id']: ClassPropertySpecParams.fromObject(x['id'], ob) for x in ob._properties}
+
+        self.relationships = {x[0]: ClassRelationshipSpecParams.fromObject(x, ob) for x in ob._relations}
+
+        self.monitoring_templates = list(ob._templates)
+
+        return self
+
+    @classmethod
+    def fromClass(cls, klass):
+        """Generate SpecParams from given class"""
+        return cls.fromObject(klass('ob'))

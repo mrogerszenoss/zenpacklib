@@ -6,8 +6,11 @@
 # License.zenoss under the directory where your Zenoss product is installed.
 #
 ##############################################################################
+from Acquisition import aq_base
 from .SpecParams import SpecParams
 from .RRDTemplateSpecParams import RRDTemplateSpecParams
+from .ZPropertySpecParams import ZPropertySpecParams
+
 from ..spec.DeviceClassSpec import DeviceClassSpec
 
 
@@ -18,3 +21,17 @@ class DeviceClassSpecParams(SpecParams, DeviceClassSpec):
         self.zProperties = zProperties
         self.templates = self.specs_from_param(
             RRDTemplateSpecParams, 'templates', templates, zplog=self.LOG)
+
+    @classmethod
+    def fromObject(cls, deviceclass):
+        self = super(DeviceClassSpecParams, cls).fromObject(deviceclass)
+
+        deviceclass = aq_base(deviceclass)
+
+        zprops = [x for x in deviceclass.zenPropertyIds(all=False) if deviceclass.isLocal(x)]
+
+        self.zProperties = {x: ZPropertySpecParams.fromObject(x, deviceclass) for x in zprops}
+
+        self.templates = {x.id: RRDTemplateSpecParams.fromObject(x) for x in deviceclass.rrdTemplates()}
+
+        return self

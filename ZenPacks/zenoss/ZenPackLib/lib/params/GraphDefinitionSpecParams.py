@@ -45,3 +45,16 @@ class GraphDefinitionSpecParams(SpecParams, GraphDefinitionSpec):
 
         return self
 
+
+    @classmethod
+    def fromObject(cls, graphdefinition):
+        self = super(GraphDefinitionSpecParams, cls).fromObject(graphdefinition)
+
+        datapoint_graphpoints = [x for x in graphdefinition.graphPoints() if isinstance(x, DataPointGraphPoint)]
+        self.graphpoints = {x.id: GraphPointSpecParams.fromObject(x, graphdefinition) for x in datapoint_graphpoints}
+
+        comment_graphpoints = [x for x in graphdefinition.graphPoints() if isinstance(x, CommentGraphPoint)]
+        if comment_graphpoints:
+            self.comments = [y.text for y in sorted(comment_graphpoints, key=lambda x: x.id)]
+
+        return self

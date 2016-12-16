@@ -6,7 +6,7 @@
 # License.zenoss under the directory where your Zenoss product is installed.
 #
 ##############################################################################
-
+from Acquisition import aq_base
 from .SpecParams import SpecParams
 from .ProcessClassSpecParams import ProcessClassSpecParams
 from ..spec.ProcessClassOrganizerSpec import ProcessClassOrganizerSpec
@@ -22,13 +22,12 @@ class ProcessClassOrganizerSpecParams(SpecParams, ProcessClassOrganizerSpec):
             ProcessClassSpecParams, 'process_classes', process_classes)
 
     @classmethod
-    def fromObject(cls, processclass, remove=False):
-        self = object.__new__(cls)
-        SpecParams.__init__(self)
+    def fromObject(cls, processclass):
+        self = super(ProcessClassOrganizerSpecParams, cls).fromObject(processclass)
 
-        self.description = processclass.description
-        self.remove = remove
+        processclass = aq_base(processclass)
         self.process_classes = {x.id: ProcessClassSpecParams.fromObject(x) for x in processclass.osProcessClasses()}
+
         return self
 
     @classmethod

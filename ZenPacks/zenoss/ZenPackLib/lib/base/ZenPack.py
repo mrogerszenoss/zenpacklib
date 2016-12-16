@@ -16,6 +16,7 @@ import sys
 from Products.ZenModel.ZenPack import ZenPack as ZenPackBase
 from ..helpers.Dumper import Dumper
 from ..helpers.ZenPackLibLog import ZenPackLibLog, new_log
+# from ..libexec.ZPLCommand import ZPLCommand
 from Products.ZenEvents import ZenEventClasses
 
 LOG = new_log('zpl.ZenPack')
@@ -128,6 +129,10 @@ class ZenPack(ZenPackBase):
     def remove(self, app, leaveObjects=False):
         if self._v_specparams is None:
             return
+
+        if self.zenpack_spec:
+            print 'Upgrading from spec, saving old'
+            import pdb ; pdb.set_trace()
 
         from Products.Zuul.interfaces import ICatalogTool
         if leaveObjects:
@@ -269,7 +274,8 @@ class ZenPack(ZenPackBase):
         proto_yaml = yaml.dump(specparam, Dumper=Dumper)
         return self.get_yaml_diff(object_yaml, proto_yaml)
 
-    def get_yaml_diff(self, yaml_existing, yaml_new):
+    @classmethod
+    def get_yaml_diff(cls, yaml_existing, yaml_new):
         """Return diff between YAML files"""
         if yaml_existing != yaml_new:
             lines_existing = [x + '\n' for x in yaml_existing.split('\n')]
